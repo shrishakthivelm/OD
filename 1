@@ -1,0 +1,361 @@
+```c
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+
+#define MAX 4
+
+void *multiply(void *arg);
+
+int main() {
+    int matA[MAX][MAX];
+    int matB[MAX][MAX];
+    int r1 = MAX, c1 = MAX, r2 = MAX, c2 = MAX, i, j;
+
+    for (i = 0; i < r1; i++) 
+        for (j = 0; j < c1; j++) 
+            matA[i][j] = rand() % 10; 
+        
+    for (i = 0; i < r2; i++) 
+        for (j = 0; j < c2; j++) 
+            matB[i][j] = rand() % 10; 
+     
+    printf("Matrix A:\n");
+    for (i = 0; i < r1; i++) {
+        for (j = 0; j < c1; j++)
+            printf("%d ", matA[i][j]);
+        printf("\n");
+    }
+         
+    printf("Matrix B:\n");
+    for (i = 0; i < r2; i++) {
+        for (j = 0; j < c2; j++)
+            printf("%d ", matB[i][j]);
+        printf("\n"); 
+    }
+
+    int max = r1 * c2;
+    pthread_t *threads = malloc(max * sizeof(pthread_t));
+    int count = 0;
+    
+    for (i = 0; i < r1; i++) {
+        for (j = 0; j < c2; j++) {
+            int *data = malloc(((2 * c1) + 1) * sizeof(int)); 
+            data[0] = c1;
+            for (int k = 0; k < c1; k++) {
+                data[k + 1] = matA[i][k];
+                data[k + c1 + 1] = matB[k][j];
+            }
+            pthread_create(&threads[count++], NULL, multiply, (void *)data);
+        }
+    }
+
+    printf("RESULTANT MATRIX IS :\n");
+    for (i = 0; i < max; i++) {
+        void *k;
+        pthread_join(threads[i], &k);
+        int *p = (int *)k;
+        printf("%d ", *p);
+        if ((i + 1) % c2 == 0)
+            printf("\n");
+    }
+
+    return 0;
+}
+
+void *multiply(void *arg) {
+    int *data = (int *)arg;
+    int c1 = data[0];
+    int sum = 0;
+    
+    for (int k = 0; k < c1; k++)
+        sum += data[k + 1] * data[k + c1 + 1];
+
+    int *p = malloc(sizeof(int));
+    *p = sum;
+    pthread_exit(p);
+}
+`````````````````````````````````````````````````````````````````````````````````````````````````````
+Write a C program that uses fork system call to create a child process and analyze how child processes are created and also find how many child created with N continues fork calls. Make a study on use of global and local variables.
+
+Solution:
+
+#include<stdio.h>
+#include<sys/types.h>
+int main()
+{
+    int n,i;
+    printf("Enter the number of file process to be created:");
+    scanf("%d",&n);
+    for(i=1;i<=n;i++)
+    {
+   	 pid_t p;
+   	 p = fork();
+   	 if (p==-1)
+   	 {
+   		 perror("error statement\n");
+   	 }
+   	 else if(p==0)
+   	 {
+   		 printf("\nHello from child %d\n",i);
+   	 }
+   	 else if(p >0)
+   	 {
+   		 printf("\nHello from the parent %d\n",i);
+   	 }
+   	 else
+   	 {
+   		 printf("\nunable to create child\n");
+   	 }
+    }
+}
+
+
+
+
+
+
+
+
+2]Write a C program to demonstrate ORPHAN state of a process. 
+ 
+Solution:
+
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+int main()
+{
+    pid_t p;
+    p = fork();
+    if(p==0)
+    {
+   	 printf("CHILD PROCESS:\n");
+   	 printf("\nprocess_id:%d\n",getpid());
+   	 printf("\nParent_id:%d\n",getppid());
+   	 sleep(10);
+   	 printf("CHILD PROCESS:\n");
+   	 printf("\nprocess_id:%d",getpid());
+   	 printf("\nparent_id:%d",getppid());
+    }
+    else if(p>0)
+    {
+   	 printf("PARENT PROCESS:\n");
+   	 printf("process_id:%d",getpid());
+    }
+    else
+    {
+   	 printf("Cannot create child");
+    }
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+3]Write a C program to demonstrate ZOMBIE state of a process. 
+
+Solution;
+
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+#include<stdlib.h>
+int main()
+{
+    pid_t p;
+    p = fork();
+    if(p==0)
+    {
+   	 exit(0);
+    }
+    else if(p>0)
+    {
+   	 sleep(5);
+    }
+    else
+    {
+   	 printf("unable to create child");
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+4]Write a C program to create a child process and return the exit status to the parent. In parent get the exit status of the child and print.
+
+Solution:
+
+#include<unistd.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<sys/wait.h>
+#include<sys/types.h>
+int main()
+{
+    pid_t p;
+    p = fork();
+    if(p==0)
+    {
+   	 exit(102);
+    }
+    int status;
+    waitpid(p,&status,0);
+    if(WIFEXITED(status))
+    {
+   	 int exit_status = WEXITSTATUS(status);
+   	 printf("exit status:%d",exit_status);
+    }
+    else
+    {
+   	 printf("Unable to create child");
+    }
+}
+
+
+
+
+
+
+
+5]Write a C program to create a child process that executes another C program that calculates the factorial of the given number using exec system call.
+
+Factorial program:
+
+#include<stdio.h>
+int factorial(int n)
+{
+    int result =1;
+    if(n<0)
+    {
+   	 printf("Enter the number that is n0n-negative");
+    }
+    for (int i = 2;i<=n;i++)
+    {
+   	 result *= i;
+    }
+    return result;
+}
+int main()
+{
+    int n,ans;
+    printf("Enter the number:");
+    scanf("%d",&n);
+    ans = factorial(n);
+    printf("Factorial is:%d",ans);
+    return 0;
+}
+
+[note: after this run the command gcc factorial.c -o factorial.out]
+
+Parent program:
+
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+int main()
+{
+    pid_t p;
+    p = fork();
+    int number;
+    if(p<0)
+    {
+   	 perror("Error statement");
+    }
+    else if (p == 0)
+    {
+   	 printf("Enter the number:");
+   	 scanf("%d",&number);
+   	 if(number <0)
+   	 {
+   		 printf("Enter the non negative number");
+   		 return 1;
+   	 }
+   	 char num_args[10];
+   	 snprintf(num_args,sizeof(num_args),"%d",number);
+   	 char *args[] = {"factorial.out",num_args,NULL};
+   	 execvp("./factorial.out",args);
+   	 fprintf(stderr,"Exec failed");
+    }
+    else
+    {
+   	 wait(NULL);
+   	 printf("child completed");
+    }
+    return 0;
+}
+
+
+
+
+
+
+6]Write a C program to create a child process. The parent will pass an integer through pipe to the child. Child will calculate the factorial and return through the same pipe to parent. Then the parent will print the result. 
+
+Solution
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+int factorial(int n)
+{
+    int result = 1;
+    for(int i=2;i<=n;i++)
+    {
+   	 result *= i;
+    }
+    return result;
+}
+int main()
+{
+    int pipefd[2];
+    int result,number;
+    if(pipe(pipefd)==-1)
+    {
+   	 perror("Pipe");
+   	 exit(EXIT_FAILURE);
+    }
+
+    pid_t p;
+    p =fork();
+    if(p<0)
+    {
+   	 perror("FORK");
+   	 exit(EXIT_FAILURE);
+    }
+    else if(p == 0)
+    {
+   	 read(pipefd[0],&number,sizeof(number));
+   	 result = factorial(number);
+   	 write(pipefd[1],&result,sizeof(result));
+   	 //exit(EXIT_SUCESS);
+    }
+    else
+    {
+   	 printf("Enter the number:");
+   	 scanf("%d",&number);
+   	 write(pipefd[1],&number,sizeof(number));
+   	 wait(NULL);
+   	 read(pipefd[0],&result,sizeof(result));
+   	 printf("RESULT:%d",result);
+    }
+}
